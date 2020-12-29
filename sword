@@ -1,0 +1,141 @@
+#!/usr/bin/python3
+
+import subprocess
+import sys
+import readline
+from core.command import *
+from core.connect import *
+from banner.color import *
+from banner.title import *
+from core.cred import *
+import os
+
+konek = conn()
+perintah = com()
+warna = warna()
+banner = title()
+credn = credential()
+
+readline.parse_and_bind('tab: complete')
+
+def sword_prompt():
+    prompt = str(input("SWORD > "))
+    return prompt.strip()
+
+def connect_prompt(ip):
+    prompt = str(input("SWORD(\033[1;31m"+ip+"\033[0m)> "))
+    return prompt.strip()
+
+def run(ip,port):
+    ip = ip
+    port = port
+    try:
+        while True:
+            prompt = connect_prompt(ip)
+            prompt = prompt.split()
+            if prompt[0] == "get_contact":
+                print(perintah.get_contact())
+            elif prompt[0] == "upload":
+                lfile = str(input("(local-file) > "))
+                rfile = str(input("(Remote-directory) > "))
+                print(perintah.upload(lfile,rfile))
+            elif prompt[0] == "download":
+                rfile = str(input("(remote-file) > "))
+                lfile = str(input("(local-directory) > "))
+                print(perintah.download(rfile,lfile))
+            elif prompt[0] == "shell":
+                perintah.spawn_shell()
+            elif prompt[0] == "get_activity":
+                perintah.get_activity()
+            elif prompt[0] == "sysinfo":
+                print(perintah.sysinfo())
+            elif prompt[0] == "check_root":
+                perintah.cek_root()
+            elif prompt[0] == "screen_mirror":
+                perintah.screen()
+            elif prompt[0] == "adb_command":
+                try:
+                    adb = True
+                    while adb:
+                        cmd = perintah.adb_command()
+                        if cmd == "exit":
+                            run(ip,port)
+                        else:
+                            print(perintah.send(cmd))
+                except KeyboardInterrupt:
+                    run(ip,port)
+                except Exception as e:
+                    print(warna.W+str(e))
+                    pass
+            elif prompt[0] == "screenshot":
+                perintah.screenshot()
+            elif prompt[0] == "exit":
+                print(konek.stop_server())
+                awal()
+            elif prompt[0] == "help":
+                print(banner.help1())
+            elif prompt[0] == "open_url":
+                url = str(input("(url) > "))
+                perintah.open_url(url)
+            elif prompt[0] == "get_apps":
+                perintah.get_apps()
+            else:
+                print(warna.W+"Command Not Found")
+    except KeyboardInterrupt:
+        print(konek.stop_server())
+        sys.exit()
+    except Exception as e:
+        print(warna.W+str(e))
+        pass
+
+def awal():
+    print(banner.ban())
+    ip = credn.rhost
+    port = credn.rport
+    try:
+        while True:
+            prompt = sword_prompt()
+            prompt = prompt.split()
+            if prompt[0] == "options":
+                print(credn.options(ip,port))
+            elif prompt[0] == "set":
+                if len(prompt) != 3:
+                    print(warna.W+"set <options> <value>")
+                else:
+                    if prompt[1] == "RHOST" or prompt[1] == "rhost":
+                        ip = prompt[2]
+                        print(warna.I+prompt[1]+" ==> "+ip)
+                    elif prompt[1] == "RPORT" or prompt[1] == "rport":
+                        port = prompt[2]
+                        print(warna.I+prompt[1]+" ==> "+port)
+                    else:
+                        print(warna.W+"set <options> <value>")
+
+            elif prompt[0] == "help":
+                print(banner.help())
+            elif prompt[0] == "run":
+                start = konek.start_server()
+                print(start)
+                kon = konek.net(ip,port)
+                cek = konek.cek_con()
+                if cek == True:
+                    print(warna.S+"Connected to {}:{}".format(ip,port))
+                    run(ip,port)
+                else:
+                    konek.stop_server()
+                    print(warna.W+"Not Connected")
+            elif prompt[0] == "exit":
+                print(warna.I+"Bye")
+                print(konek.stop_server())
+                sys.exit()
+            else:
+                print(warna.W+"Command Not Found")
+    except KeyboardInterrupt:
+        print(konek.stop_server())
+        sys.exit()
+    except Exception as e:
+        print(warna.W+str(e))
+        pass
+
+if __name__ == "__main__":
+    awal()
